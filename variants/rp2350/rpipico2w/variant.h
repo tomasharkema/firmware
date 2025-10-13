@@ -16,6 +16,13 @@
 // txd = 8
 // rxd = 9
 
+#define HAS_GPS 1
+#define GPS_TX_PIN (0u)
+#define GPS_RX_PIN (1u)
+
+// #define PIN_SERIAL1_RX GPS_TX_PIN
+// #define PIN_SERIAL1_TX GPS_RX_PIN
+
 #define EXT_NOTIFY_OUT 22
 #define BUTTON_PIN 17
 
