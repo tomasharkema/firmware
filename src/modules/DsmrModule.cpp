@@ -54,7 +54,7 @@ int32_t DsmrModule::runOnce()
 
     Serial2.setRxBufferSize(RX_BUFFER);
     // Serial2.setRxInvert(true);
-    Serial2.begin(115200, SERIAL_8N1, P1_RX, -1, true, 1000);
+    Serial2.begin(115200, SERIAL_8N1, P1_RX, -1, false, 1000);
     Serial2.flush();
 
     delay(10);
