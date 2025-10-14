@@ -106,34 +106,57 @@ int32_t DsmrModule::runOnce()
     err.clear();
     if (p1Reader->parse(&data, &err))
     {
-      LOG_WARN("PARSE SUCCEEDED");
-      data.applyEach(Printer(streamString));
+      meshtastic_MeshPacket *p = router->allocForSending();
 
-      char i = 0;
-      while (streamString->available() && i < 10)
+      char strBug[512];
+
+      const meshtastic_Channel *ch = &channels.getByName(Channels::serialChannel);
+      if (ch != NULL)
       {
-        LOG_WARN("SEND PACKET");
-        meshtastic_MeshPacket *p = router->allocForSending();
-
-        const meshtastic_Channel *ch = &channels.getByName(Channels::serialChannel);
-        if (ch != NULL)
-        {
-          p->channel = ch->index;
-        }
-        p->to = NODENUM_BROADCAST;
-        p->decoded.want_response = false;
-        p->want_ack = ACK;
-        p->decoded.portnum = meshtastic_PortNum_SERIAL_APP;
-
-        char buf[meshtastic_Constants_DATA_PAYLOAD_LEN];
-        buf[0] = i;
-        buf[1] = ';';
-        size_t leng = streamString->readBytes(buf + 2, meshtastic_Constants_DATA_PAYLOAD_LEN - 2);
-        p->decoded.payload.size = leng + 2;
-        memcpy(p->decoded.payload.bytes, buf, p->decoded.payload.size);
-        service->sendToMesh(p);
-        i++;
+        p->channel = ch->index;
       }
+      p->to = NODENUM_BROADCAST;
+      p->decoded.portnum = meshtastic_PortNum_TEXT_MESSAGE_APP;
+
+      sprintf(strBug, "ed1:%i\ned2:%i\npdl1:%i\npdl2:%i\npdl3:%i",
+              data.energy_delivered_tariff1.int_val(),
+              data.energy_delivered_tariff2.int_val(),
+              data.power_delivered_l1.int_val(),
+              data.power_delivered_l2.int_val(),
+              data.power_delivered_l3.int_val());
+
+      p->decoded.payload.size = strlen(strBug);
+      memcpy(p->decoded.payload.bytes, strBug, p->decoded.payload.size);
+      service->sendToMesh(p);
+
+      // LOG_WARN("PARSE SUCCEEDED");
+      // data.applyEach(Printer(streamString));
+
+      // char i = 0;
+      // while (streamString->available() && i < 10)
+      // {
+      //   LOG_WARN("SEND PACKET");
+      //   meshtastic_MeshPacket *p = router->allocForSending();
+
+      //   const meshtastic_Channel *ch = &channels.getByName(Channels::serialChannel);
+      //   if (ch != NULL)
+      //   {
+      //     p->channel = ch->index;
+      //   }
+      //   p->to = NODENUM_BROADCAST;
+      //   p->decoded.want_response = false;
+      //   p->want_ack = ACK;
+      //   p->decoded.portnum = meshtastic_PortNum_SERIAL_APP;
+
+      //   char buf[meshtastic_Constants_DATA_PAYLOAD_LEN];
+      //   buf[0] = i;
+      //   buf[1] = ';';
+      //   size_t leng = streamString->readBytes(buf + 2, meshtastic_Constants_DATA_PAYLOAD_LEN - 2);
+      //   p->decoded.payload.size = leng + 2;
+      //   memcpy(p->decoded.payload.bytes, buf, p->decoded.payload.size);
+      //   service->sendToMesh(p);
+      //   i++;
+      // }
     }
     else
     {
