@@ -7,7 +7,7 @@
 #define P1_RX 48
 #define P1_TX 47
 #define P1_DTR 26
-
+#define P1_INVERT true
 using MyData = ParsedData<
     /* String */ identification,
     /* String */ p1_version,
