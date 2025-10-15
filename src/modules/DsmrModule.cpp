@@ -1,3 +1,4 @@
+#ifdef HELTEC_V3_P1
 #include "DsmrModule.h"
 #include <dsmr.h>
 #include "DebugConfiguration.h"
@@ -169,3 +170,4 @@ int32_t DsmrModule::runOnce()
 
   return 30000;
 }
+#endif

@@ -12,7 +12,8 @@
 #include "WVariant.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif // __cplusplus
 
 // Number of pins defined in PinDescription array
@@ -52,9 +53,9 @@ No longer populated on PCB
 #define PIN_WIRE_SDA (32 + 15)
 #define PIN_WIRE_SCL (32 + 13)
 
-/*
- * Lora radio
- */
+  /*
+   * Lora radio
+   */
 
 #define USE_SX1262
 #define SX126X_CS (0 + 26) // FIXME - we really should define LORA_CS instead
@@ -71,21 +72,21 @@ No longer populated on PCB
 #define SX126X_DIO2_AS_RF_SWITCH
 #define SX126X_DIO3_TCXO_VOLTAGE 1.8
 
-// Display (E-Ink)
-#define PIN_EINK_CS 24
-#define PIN_EINK_BUSY 32 + 6
-#define PIN_EINK_DC 31
-#define PIN_EINK_RES 32 + 4
-#define PIN_EINK_SCLK 22
-#define PIN_EINK_MOSI 20
+  // Display (E-Ink)
+  // #define PIN_EINK_CS 24
+  // #define PIN_EINK_BUSY 32 + 6
+  // #define PIN_EINK_DC 31
+  // #define PIN_EINK_RES 32 + 4
+  // #define PIN_EINK_SCLK 22
+  // #define PIN_EINK_MOSI 20
 
 #define PIN_SPI1_MISO -1
-#define PIN_SPI1_MOSI PIN_EINK_MOSI
-#define PIN_SPI1_SCK PIN_EINK_SCLK
+#define PIN_SPI1_MOSI 20 // PIN_EINK_MOSI
+#define PIN_SPI1_SCK 22  // PIN_EINK_SCLK
 
-/*
- * GPS pins
- */
+  /*
+   * GPS pins
+   */
 
 #define PIN_SERIAL1_RX 32 + 5
 #define PIN_SERIAL1_TX 32 + 7
@@ -100,15 +101,15 @@ No longer populated on PCB
 #define PIN_SPI_MOSI (0 + 5)
 #define PIN_SPI_SCK (0 + 4)
 
-// #define PIN_PWR_EN (0 + 6)
+  // #define PIN_PWR_EN (0 + 6)
 
-// To debug via the segger JLINK console rather than the CDC-ACM serial device
-// #define USE_SEGGER
+  // To debug via the segger JLINK console rather than the CDC-ACM serial device
+  // #define USE_SEGGER
 
-// Battery
-// The battery sense is hooked to pin A0 (4)
-// it is defined in the anlaolgue pin section of this file
-// and has 12 bit resolution
+  // Battery
+  // The battery sense is hooked to pin A0 (4)
+  // it is defined in the anlaolgue pin section of this file
+  // and has 12 bit resolution
 
 #define ADC_CTRL 32 + 2
 #define ADC_CTRL_ENABLED HIGH
