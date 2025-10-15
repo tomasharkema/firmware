@@ -107,7 +107,7 @@
 #include "modules/DropzoneModule.h"
 #endif
 
-#ifdef HELTEC_V3_P1
+#ifdef P1_SENSOR
 #include "modules/DsmrModule.h"
 #endif
 
@@ -303,7 +303,7 @@ void setupModules()
         new RangeTestModule();
 #endif
 
-#ifdef HELTEC_V3_P1
+#ifdef P1_SENSOR
     dsmrModule = new DsmrModule();
 #endif
     // NOTE! This module must be added LAST because it likes to check for replies from other modules and avoid sending extra
