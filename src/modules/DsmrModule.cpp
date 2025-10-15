@@ -1,4 +1,4 @@
-#ifdef HELTEC_V3_P1
+#ifdef P1_SENSOR
 #include "DsmrModule.h"
 #include <dsmr.h>
 #include "DebugConfiguration.h"
@@ -53,9 +53,16 @@ int32_t DsmrModule::runOnce()
 
     LOG_WARN("DsmrModule firstTime = 1");
 
+    #ifdef HELTEC_V3
     Serial2.setRxBufferSize(RX_BUFFER);
     // Serial2.setRxInvert(true);
     Serial2.begin(115200, SERIAL_8N1, P1_RX, -1, P1_INVERT, 1000);
+    #endif
+    #ifdef RP2040_LORA
+    Serial2.setFIFOSize(RX_BUFFER);
+    Serial2.setPinout(-1, P1_RX);
+    Serial2.begin(115200);
+    #endif
     Serial2.flush();
 
     delay(10);
@@ -103,8 +110,9 @@ int32_t DsmrModule::runOnce()
       return cleanup();
     }
 
-    MyData data;
-    err.clear();
+    P1Data data;
+    // err.clear();
+    err = "";
     if (p1Reader->parse(&data, &err))
     {
       meshtastic_MeshPacket *p = router->allocForSending();
@@ -119,12 +127,15 @@ int32_t DsmrModule::runOnce()
       p->to = NODENUM_BROADCAST;
       p->decoded.portnum = meshtastic_PortNum_TEXT_MESSAGE_APP;
 
-      sprintf(strBug, "ed1:%i\ned2:%i\npdl1:%i\npdl2:%i\npdl3:%i",
+      sprintf(strBug, "ed1:%i\ned2:%i\npdl1:%i\npdl2:%i\npdl3:%i\ng:%i\n",
               data.energy_delivered_tariff1.int_val(),
               data.energy_delivered_tariff2.int_val(),
               data.power_delivered_l1.int_val(),
               data.power_delivered_l2.int_val(),
-              data.power_delivered_l3.int_val());
+              data.power_delivered_l3.int_val(),
+            
+            data.gas_delivered.int_val()
+            );
 
       p->decoded.payload.size = strlen(strBug);
       memcpy(p->decoded.payload.bytes, strBug, p->decoded.payload.size);

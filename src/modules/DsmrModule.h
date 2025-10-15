@@ -1,15 +1,48 @@
 #pragma once
-#ifdef HELTEC_V3_P1
+#ifdef P1_SENSOR
 #include "concurrency/OSThread.h"
 #include <dsmr.h>
 #include <StreamString.h>
 
+#ifdef RP2040_LORA
+
+#define P1_RX 9
+#define P1_DTR 10
+#define P1_INVERT false
+
+#endif
+
+#ifdef HELTEC_V3
+
 #define P1_RX 48
-#define P1_TX 47
 #define P1_DTR 26
 #define P1_INVERT false
 
-using MyData = ParsedData<
+#endif
+
+
+class DsmrModule : private concurrency::OSThread
+{
+  P1Reader *p1Reader;
+
+  bool firstTime = 1;
+  char outbuf[90] = "";
+
+public:
+  DsmrModule();
+
+protected:
+  virtual int32_t runOnce() override;
+
+private:
+  // void processWXSerial();
+  int32_t cleanup();
+
+  StreamString *streamString = new StreamString();
+  String err;
+};
+
+using P1Data = ParsedData<
     /* String */ identification,
     /* String */ p1_version,
     /* String */ timestamp,
@@ -63,26 +96,6 @@ using MyData = ParsedData<
     /* uint8_t */ slave_valve_position,
     /* TimestampedFixedValue */ slave_delivered>;
 
-class DsmrModule : private concurrency::OSThread
-{
-  P1Reader *p1Reader;
-
-  bool firstTime = 1;
-  char outbuf[90] = "";
-
-public:
-  DsmrModule();
-
-protected:
-  virtual int32_t runOnce() override;
-
-private:
-  // void processWXSerial();
-  int32_t cleanup();
-
-  StreamString *streamString = new StreamString();
-  String err;
-};
 
 extern DsmrModule *dsmrModule;
 
