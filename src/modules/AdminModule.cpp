@@ -104,9 +104,18 @@ bool AdminModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshta
             (config.security.admin_key[2].size == 32 &&
              memcmp(mp.public_key.bytes, config.security.admin_key[2].bytes, 32) == 0)) {
             LOG_INFO("PKC admin payload with authorized sender key");
+
+            // Automatically favorite the node that is using the admin key
             auto remoteNode = nodeDB->getMeshNode(mp.from);
             if (remoteNode && !remoteNode->is_favorite) {
-                remoteNode->is_favorite = true;
+                if (config.device.role == meshtastic_Config_DeviceConfig_Role_CLIENT_BASE) {
+                    // Special case for CLIENT_BASE: is_favorite has special meaning, and we don't want to automatically set it
+                    // without the user doing so deliberately.
+                    LOG_INFO("PKC admin valid, but not auto-favoriting node %x because role==CLIENT_BASE", mp.from);
+                } else {
+                    LOG_INFO("PKC admin valid. Auto-favoriting node %x", mp.from);
+                    remoteNode->is_favorite = true;
+                }
             }
         } else {
             myReply = allocErrorResponse(meshtastic_Routing_Error_ADMIN_PUBLIC_KEY_UNAUTHORIZED, &mp);
@@ -232,6 +241,7 @@ bool AdminModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshta
 #if defined(ARCH_ESP32)
 #if !MESHTASTIC_EXCLUDE_BLUETOOTH
         if (!BleOta::getOtaAppVersion().isEmpty()) {
+            suppressRebootBanner = true;
             if (screen)
                 screen->startFirmwareUpdateScreen();
             BleOta::switchToOtaApp();
@@ -240,6 +250,7 @@ bool AdminModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshta
 #endif
 #if !MESHTASTIC_EXCLUDE_WIFI
         if (WiFiOTA::trySwitchToOTA()) {
+            suppressRebootBanner = true;
             if (screen)
                 screen->startFirmwareUpdateScreen();
             WiFiOTA::saveConfig(&config.network);
@@ -280,7 +291,12 @@ bool AdminModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshta
     case meshtastic_AdminMessage_nodedb_reset_tag: {
         disableBluetooth();
         LOG_INFO("Initiate node-db reset");
-        nodeDB->resetNodes();
+        //  CLIENT_BASE, ROUTER and ROUTER_LATE are able to preserve the remaining hop count when relaying a packet via a
+        //  favorited node, so ensure that their favorites are kept on reset
+        bool rolePreference =
+            isOneOf(config.device.role, meshtastic_Config_DeviceConfig_Role_CLIENT_BASE,
+                    meshtastic_Config_DeviceConfig_Role_ROUTER, meshtastic_Config_DeviceConfig_Role_ROUTER_LATE);
+        nodeDB->resetNodes(rolePreference ? rolePreference : r->nodedb_reset);
         reboot(DEFAULT_REBOOT_SECONDS);
         break;
     }
@@ -369,6 +385,16 @@ bool AdminModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshta
         }
         break;
     }
+    case meshtastic_AdminMessage_toggle_muted_node_tag: {
+        LOG_INFO("Client received toggle_muted_node command");
+        meshtastic_NodeInfoLite *node = nodeDB->getMeshNode(r->toggle_muted_node);
+        if (node != NULL) {
+            node->bitfield ^= (1 << NODEINFO_BITFIELD_IS_MUTED_SHIFT);
+            saveChanges(SEGMENT_NODEDATABASE, false);
+        }
+        break;
+    }
+
     case meshtastic_AdminMessage_set_fixed_position_tag: {
         LOG_INFO("Client received set_fixed_position command");
         meshtastic_NodeInfoLite *node = nodeDB->getMeshNode(nodeDB->getNodeNum());
@@ -403,6 +429,9 @@ bool AdminModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshta
     }
     case meshtastic_AdminMessage_enter_dfu_mode_request_tag: {
         LOG_INFO("Client requesting to enter DFU mode");
+#if HAS_SCREEN
+        IF_SCREEN(screen->showSimpleBanner("Device is rebooting\ninto DFU mode.", 0));
+#endif
 #if defined(ARCH_NRF52) || defined(ARCH_RP2040)
         enterDfuMode();
 #endif
@@ -759,6 +788,7 @@ void AdminModule::handleSetConfig(const meshtastic_Config &c)
         config.lora = validatedLora;
         // If we're setting region for the first time, init the region and regenerate the keys
         if (isRegionUnset && config.lora.region > meshtastic_Config_LoRaConfig_RegionCode_UNSET) {
+#if !(MESHTASTIC_EXCLUDE_PKI_KEYGEN || MESHTASTIC_EXCLUDE_PKI)
             if (!owner.is_licensed) {
                 bool keygenSuccess = false;
                 if (config.security.private_key.size == 32) {
@@ -777,6 +807,7 @@ void AdminModule::handleSetConfig(const meshtastic_Config &c)
                     memcpy(owner.public_key.bytes, config.security.public_key.bytes, 32);
                 }
             }
+#endif
             config.lora.tx_enabled = true;
             initRegion();
             if (myRegion->dutyCycle < 100) {

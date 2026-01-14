@@ -53,7 +53,7 @@ extern void drawCommonHeader(OLEDDisplay *display, int16_t x, int16_t y, const c
 #include "Sensor/LTR390UVSensor.h"
 #endif
 
-#if __has_include(<bsec2.h>)
+#if __has_include(MESHTASTIC_BME680_HEADER)
 #include "Sensor/BME680Sensor.h"
 #endif
 
@@ -134,6 +134,10 @@ extern void drawCommonHeader(OLEDDisplay *display, int16_t x, int16_t y, const c
 #include "Sensor/TSL2561Sensor.h"
 #endif
 
+#if __has_include(<BH1750_WE.h>)
+#include "Sensor/BH1750Sensor.h"
+#endif
+
 #define FAILED_STATE_SENSOR_READ_MULTIPLIER 10
 #define DISPLAY_RECEIVEID_MEASUREMENTS_ON_SCREEN true
 
@@ -210,7 +214,7 @@ void EnvironmentTelemetryModule::i2cScanFinished(ScanI2C *i2cScanner)
 #if __has_include(<Adafruit_LTR390.h>)
     addSensor<LTR390UVSensor>(i2cScanner, ScanI2C::DeviceType::LTR390UV);
 #endif
-#if __has_include(<bsec2.h>)
+#if __has_include(MESHTASTIC_BME680_HEADER)
     addSensor<BME680Sensor>(i2cScanner, ScanI2C::DeviceType::BME_680);
 #endif
 #if __has_include(<Adafruit_BMP280.h>)
@@ -261,6 +265,9 @@ void EnvironmentTelemetryModule::i2cScanFinished(ScanI2C *i2cScanner)
 #endif
 #if __has_include(<SparkFun_Qwiic_Scale_NAU7802_Arduino_Library.h>)
     addSensor<NAU7802Sensor>(i2cScanner, ScanI2C::DeviceType::NAU7802);
+#endif
+#if __has_include(<BH1750_WE.h>)
+    addSensor<BH1750Sensor>(i2cScanner, ScanI2C::DeviceType::BH1750);
 #endif
 
 #endif
@@ -361,6 +368,7 @@ bool EnvironmentTelemetryModule::wantUIFrame()
     return moduleConfig.telemetry.environment_screen_enabled;
 }
 
+#if HAS_SCREEN
 void EnvironmentTelemetryModule::drawFrame(OLEDDisplay *display, OLEDDisplayUiState *state, int16_t x, int16_t y)
 {
     // === Setup display ===
@@ -370,7 +378,7 @@ void EnvironmentTelemetryModule::drawFrame(OLEDDisplay *display, OLEDDisplayUiSt
     int line = 1;
 
     // === Set Title
-    const char *titleStr = (graphics::isHighResolution) ? "Environment" : "Env.";
+    const char *titleStr = (graphics::currentResolution == graphics::ScreenResolution::High) ? "Environment" : "Env.";
 
     // === Header ===
     graphics::drawCommonHeader(display, x, y, titleStr);
@@ -509,7 +517,9 @@ void EnvironmentTelemetryModule::drawFrame(OLEDDisplay *display, OLEDDisplayUiSt
 
         currentY += rowHeight;
     }
+    graphics::drawCommonFooter(display, x, y);
 }
+#endif
 
 bool EnvironmentTelemetryModule::handleReceivedProtobuf(const meshtastic_MeshPacket &mp, meshtastic_Telemetry *t)
 {
